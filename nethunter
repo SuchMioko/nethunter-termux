@@ -135,7 +135,7 @@ function main(){
             if [ -f $NETHUNTER_FILE ]; then
                 CORRECT_SHA=$(wget $SHATARBALL -q -O -)
                 ROOTFS_SHA=$(sha512sum $NETHUNTER_FILE)
-                if [[ ${CORRECT_SHA} == ${ROOTFS_SHA} ]]; then
+                if [[ ${CORRECT_SHA} != ${ROOTFS_SHA} ]]; then
                     result="$show_errorSha512Sum\n"
                     display_result "Error"
                     main # Kembali ke menu.
