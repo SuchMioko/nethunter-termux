@@ -1,0 +1,218 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+##############################################################
+#
+# Author: Ryuuou
+# Build date: 12 Mei 2022
+#
+# Konfigurasi untuk NetHunter.
+#
+##############################################################
+
+function check_mounted(){
+    for createFS in ${file_system[@]}; do
+        mkdir -p ${NETHUNTERFS}${createFS}
+    done
+
+    for mounted in ${file_system[@]}; do
+        if [[ ! $(busybox mountpoint ${NETHUNTERFS}${mounted} | grep "is a") ]]; then
+            mount_chrootfs
+            continue
+        else
+            printf "\n${mounted} was mounted already"
+            sleep 0.2
+        fi
+    done
+}
+
+# Menjalankan shell dari chroot.
+function SagiriLonte(){
+    if [ $username == 0 ]; then
+        configurasi_chroot; clear
+        # Mulai masuk ke shell rootfs dengan sudo.
+        busybox chroot $NETHUNTERFS /usr/bin/sudo --login \
+            --user=${user_name} /usr/bin/${shell_login}
+    else
+        celana_dalamArghh # Lingkungan nethunter dengan PRoot.
+        pantsu_megumin_wangywangy # Eksekusi lingkungan dan masuk shell dengan su.
+    fi
+}
+
+# Menjalankan shell dari chroot melalui PRoot.
+function pantsu_megumin_wangywangy(){
+    aqua_beban="$@"
+    if [ -z "$1" ];then
+        exec $oppai
+    else
+        $oppai -c "$aqua_beban"
+    fi
+}
+
+# Envinronment untuk dipakai NetHunter Rootless.
+function celana_dalamArghh(){
+    unset LD_PRELOAD
+    oppai="proot \
+        --kernel-release=5.4.0-Kernel \
+        --kill-on-exit \
+        --link2symlink \
+        --sysvipc \
+        --root-id \
+        --rootfs=$NETHUNTERFS \
+        --pwd=/root \
+        --mount=/dev \
+        --mount=$NETHUNTERFS/root:/dev/shm \
+        --mount=/proc \
+        --mount=/sys \
+        --mount=/sdcard \
+        --mount=/dev/urandom:/dev/random \
+        --mount=/proc/self/fd:/dev/fd \
+        --mount=/proc/self/fd/0:/dev/stdin \
+        --mount=/proc/self/fd/1:/dev/stdout \
+        /usr/bin/env -i \
+            MOZ_FAKE_NO_SANDBOX=1 \
+            HOME=/root \
+            PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin \
+            PULSE_SERVER=127.0.0.1 \
+            TERM=$TERM \
+            TMPDIR=/tmp \
+            LANG=C.UTF-8 \
+            /bin/su -l"
+    configurasi_chroot
+}
+
+function configurasi_chroot(){
+    if [ $username == 0 ]; then
+        if [ ! -e "/dev/fd" -o ! -e "/dev/stdin" -o ! -e "/dev/stdout" -o ! -e "/dev/stderr" ]; then
+            [ -e "/dev/fd" ] || ln -s /proc/self/fd /dev/
+            [ -e "/dev/stdin" ] || ln -s /proc/self/fd/0 /dev/stdin
+            [ -e "/dev/stdout" ] || ln -s /proc/self/fd/1 /dev/stdout
+            [ -e "/dev/stderr" ] || ln -s /proc/self/fd/2 /dev/stderr
+        fi
+        # Menambahkan hostname dan dns hostanme, default hostname: kali
+        printf "127.0.0.1              localhost ${hostname}\n" > $NETHUNTERFS/etc/hosts
+        printf "::1                           localhost ip6-localhost ip6-loopback" >> $NETHUNTERFS/etc/hosts
+        printf ${hostname} > $NETHUNTERFS/proc/sys/kernel/hostname
+        busybox sysctl -w kernel.shmmax=268435456 &> /dev/null
+        busybox sysctl -w net.ipv4.ip_forward=1 &> /dev/null
+    fi
+    # Menambahkan dns ke resolv.conf
+    > $NETHUNTERFS/etc/resolv.conf # Mengosongkan tempat dns.
+    for dnsnumber in 1 2 3 4; do
+        # Memberhentikan menambahkan dns local jika dns dari property kosong.
+        if [ -z $(getprop net.dns${dnsnumber}) ]; then
+            break
+        else
+            # Menambahkan local dns server.
+            printf "℅s\n" "nameserver $(getprop net.dns${dnsnumber})" >> $NETHUNTERFS/etc/resolv.conf
+        fi
+    done
+    # Menambahkan dns jika dns local kosong.
+    printf "nameserver 1.1.1.1" >> $NETHUNTERFS/etc/resolv.conf
+    chmod 644 $NETHUNTERFS/etc/resolv.conf
+    chmod +s $NETHUNTERFS/bin/sudo
+}
+
+function mount_chrootfs(){
+    mount -o remount,suid /data
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/dev/ | grep "is a") ]]; then
+        printf "Mount /dev\n"
+        mount -o bind /dev $NETHUNTERFS/dev
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/dev/pts/ | grep "is a") ]]; then
+        printf "Mount /dev/pts\n"
+        busybox mount -t devpts devpts $NETHUNTERFS/dev/pts
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/dev/shm/ 2>/dev/null | grep "is a") ]]; then
+            mkdir -p $NETHUNTERFS/dev/shm
+            printf "Mount /dev/shm\n"
+            busybox mount -o rw,nosuid,nodev,mode=1777 -t tmpfs tmpfs $NETHUNTERFS/dev/shm
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/proc/ | grep "is a") ]]; then
+        printf "Mount /proc\n"
+        busybox mount -t proc proc $NETHUNTERFS/proc
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/sys/ | grep "is a") ]]; then
+        printf "Mount /sys\n"
+        busybox mount -t sysfs sys $NETHUNTERFS/sys
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/system/ | grep "is a") ]]; then
+        printf "Mount /system\n"
+        busybox mount -r -o bind /system $NETHUNTERFS/system
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/sdcard/ | grep "is a") ]]; then
+        printf "Mount /sdcard\n"
+        busybox mount -o bind /storage/emulated/0 $NETHUNTERFS/sdcard
+    fi
+    if [[ ! $(busybox mountpoint $NETHUNTERFS/external_sd | grep "is a") ]]; then
+        if [[ -d /storage/${external_sd} ]]; then
+            busybox mount -o bind /storage/${external_sd} $NETHUNTERFS/external_sd
+            printf "Mount /external_sd\n"
+        fi
+    fi
+}
+
+function start(){
+    # Menjalankan chroot sesuai session user.
+    if [ $username != 1 ]; then
+        if [ ! $(busybox mountpoint $NETHUNTERFS | grep 'is a') ]; then
+            if [ ! -f "/system/xbin/busybox" ]; then
+                # Mengeluarkan program jika busybox tidak ditemukan.
+                printf "busybox not found, please install busybox on your device!\n"
+                exit 1
+            fi
+            # Memulai mount file sistem dengan gaya progress.
+            check_mounted | \
+                dialog --progressbox "mounting rootfs...\n" 20 50
+            SagiriLonte
+        fi
+    else
+        printf "Starting login to shell...\n"
+        SagiriLonte
+    fi
+}
+
+function kill_chrootfs(){
+    busybox sync
+    # Array yang dipakai untuk umount fs.
+    FS=( /dev/pts /dev/shm /dev /proc /sys /system /sdcard)
+    for umountfs in "${FS[@]}"; do
+        if busybox mountpoint -q $NETHUNTERFS$umountfs; then
+            if busybox umount -l $NETHUNTERFS$umountfs || busybox umount -l $NETHUNTERFS$umountfs; then
+                # Umounting file sistem.
+                printf "umounting $umountfs\n"
+                sleep 0.2
+            fi
+        else
+            if [ -d $NETHUNTETFS$umountfs ]; then
+                printf "$NETHUNTERFS/$umountfs is unmounted already.\n"
+                if rm -rf $NETHUNTERFS$umountfs; then
+                    printf "Removed $NETHUNTETFS/$umountfs\n"
+                fi
+            fi
+        fi
+        # Menghapus file sistem dengan mendahulukan umount /dev.
+        if [ ! "$umountfs" = "/dev/pts" -a ! "$umountfs" = "/dev/shm" ]; then
+            # Hapus file sistem.
+            if rm -rf $NETHUNTERFS$umountfs; then
+                printf "Removed $umountfs\n"
+                sleep 0.2
+            fi
+        fi
+    done
+    # Umount penyimpanan ekternal jika mountpoint external_sd adalah 'is a'.
+    if [[ $(busybox mountpoint ${NETHUNTERFS}/external_sd | grep "is a") ]]; then
+        busybox umount -l ${NETHUNTERFS}/external_sd
+        printf "umounting external_sd\n"
+    fi
+}
+
+function kill_bash(){
+    printf "Killing bash process..."
+    kill -9 ${proc_bash} 2> /dev/null
+}
+
+function kill_nethunter(){
+    printf "Kill all process nethunter\n"
+    busybox sysctl -w kernel.shmmax=134217728 &> /dev/null
+    kill -9 ${proc_nethunter} 2> /dev/null
+}

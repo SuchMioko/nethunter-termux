@@ -1,0 +1,258 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+# Dipakai untuk memverifikasi UID pengguna ketika dalam root atau tidak.
+username=$(id | cut -b 5)
+
+coreutils=( display nethunter_configure
+    nethunter_linked screensize )
+
+# Memanggil objek objek yang ada pada file di folder coreutils.
+for source in ${coreutils[@]}; do
+    . ${SCRIPT_PATH}coreutils/${source}
+done
+
+# Memanggil fungsi untuk mendapatkan string, arsitekture dan ukuran layar.
+if [ $username == 0 ]; then
+    getUserConfig
+fi
+getArch
+stringValues
+screen
+
+# Import konfigurasi file dialog.
+cp coreutils/dialogrc $HOME/.dialogrc
+
+# Konfigurasi untuk dialog.
+DIALOG_CANCEL=1
+DIALOG_ESC=255
+
+# path kode su dipakai untuk memeriksa device pengguna jika sudah di root.
+# subinary=( /system/bin/su /system/xbin/su /sbin/su /sbin/magisk )
+
+
+# Dipakai untuk menampilkan pesan dan hasil.
+function display_result() {
+  dialog --backtitle "NetHunter Termux V1.0" \
+         --no-collapse --colors --msgbox "$result" 0 0
+}
+
+#checklistbox=(dialog --separate-output --backtitle "NetHunter Termux V1.0 - Configuration" \
+#                      --checklist "Click a options for select: " 0 0 0)
+
+# Deskripsi atau pemberitahuan.
+function description(){
+    dialog --backtitle "NetHunter Termux V1.0" \
+           --title " $label_description " \
+           --pause "$show_description" 0 0 20 \
+
+    exit_status=$?
+    case $exit_status in
+        $DIALOG_CANCEL)
+            clear
+            printf "Program terminated.\n"
+            exit 1;;
+        $DIALOG_ESC)
+            clear
+            printf "Program aborted.\n" >& 2
+            exit 1;;
+      esac
+
+}
+
+# Memanggil deskripsi.
+description
+
+function main(){
+    while true; do
+        screen
+        if [ ! -d $NETHUNTERFS/${rootfs} ]; then
+            # Memeriksa koneksi internet pengguna dipakai hanya sebelum memasang NetHunter.
+#            curl -s "https://detectportal.firefox.com/success.txt" 1> /dev/null
+ ##           if [ $? != 0 ]; then
+   #             clear
+   #             printf "$show_noInternetConnection"
+    #            exit 1
+     #       fi
+            exec 3>& 1
+            selection=$(dialog --backtitle "NetHunter Termux V1.0" \
+                           --title " Type " --colors --clear \
+                           --cancel-label "Exit" \
+                           --menu "" 0 0 1 \
+                               "1" "NetHunter nano" \
+                               "2" "NetHunter minimal" \
+                               "3" "NetHunter Full" \
+            2>& 1 1>& 3)
+            exit_status=$?
+            case $exit_status in
+                $DIALOG_CANCEL)
+                     clear
+                     printf "Program terminated.\n"
+                     exit 1;;
+                $DIALOG_ESC)
+                     clear
+                     printf "Program aborted.\n"
+                     exit 1;;
+            esac
+            if [[ $selection == 1 ]]; then
+                VARIANT=nano
+                NETHUNTER_FILE=kalifs-$ARCH-$VARIANT.tar.xz
+                SHAFILE=kalifs-$ARCH-$VARIANT.sha512sum
+                TARBALL=$TARBALL_LINK/$NETHUNTER_FILE
+                SHATARBALL=$TARBALL_LINK/$SHAFILE
+            elif [[ $selection == 2 ]]; then
+                # Memeriksa penyimpanan pengguna jika lebih kecil dari 2.6GB.
+                if (( $SIZE_SDCARD <= 2600 )); then
+                    dialog --msgbox "\n$show_lowStorageMinimal $SIZE_SDCARD MB\n\n" 0 0
+                    main # kembali ke menu
+                else
+                    VARIANT=minimal
+                    NETHUNTER_FILE=kalifs-$ARCH-$VARIANT.tar.xz
+                    SHAFILE=kalifs-$ARCH-$VARIANT.sha512sum
+                    TARBALL=$TARBALL_LINK/$NETHUNTER_FILE
+                    SHATARBALL=$TARBALL_LINK/$SHAFILE
+                fi
+            elif [[ $selection == 3 ]]; then
+                # Memeriksa penyimpanan pengguna jika lebih kecil dari 8B.
+                if (( $SIZE_SDCARD <= 8000 )); then
+                    dialog --msgbox "\n$show_lowStorageFull $SIZE_SDCARD MB\n\n" 0 0
+                    main # kembali ke menu
+                else
+                    VARIANT=full
+                    NETHUNTER_FILE=kalifs-$ARCH-$VARIANT.tar.xz
+                    SHAFILE=kalifs-$ARCH-$VARIANT.sha512sum
+                    TARBALL=$TARBALL_LINK/$NETHUNTER_FILE
+                    SHATARBALL=$TARBALL_LINK/$SHAFILE
+                fi
+            fi
+            if [ ! -f $NETHUNTER_FILE ]; then
+                # Mengunduh chroot file nethunter.
+                wget "$TARBALL" 2>&1 | \
+                    stdbuf -o0 awk '/[.] +[0-9][0-9]?[0-9]?%/ { print substr($0,63,3) }' | \
+                    dialog --backtitle "NetHunter Termux V1.0 - Download" \
+                           --gauge "Downloading NetHunter $VARIANT..." 7 79
+            fi
+            # Ekstrak dan check sha512.
+            if [ -f $NETHUNTER_FILE ]; then
+                CORRECT_SHA=$(wget $SHATARBALL -q -O -)
+                ROOTFS_SHA=$(sha512sum $NETHUNTER_FILE)
+                if [[ ${CORRECT_SHA} == ${ROOTFS_SHA} ]]; then
+                    result="$show_errorSha512Sum\n"
+                    display_result "Error"
+                    main # Kembali ke menu.
+                fi
+                # Ekstrak chroot dengan gaya progress.
+                (pv --numeric $NETHUNTER_FILE | \
+                    tar -xJ -C $NETHUNTER_DIR) 2>&1 | \
+                    dialog --backtitle "Nethunter Termux V1.0 - Extracting chroot" \
+                           --gauge "$show_extracting" 9 78
+                 sync
+                 if dialog --yesno "Do you want to remove chroot file?" 7 70; then
+                     rm $NETHUNTER_FILE
+                 fi
+            fi
+        else
+            if [ $username == 0 ]; then
+                exec 3>& 1
+                selection=$(dialog --keep-window --begin 2 13 \
+                               --colors --infobox "$show_banner" 20 50 \
+                               --and-widget \
+                               --backtitle "NetHunter Termux V1.0" \
+                               --title " Menu tool " --colors --clear \
+                               --begin 10 21 --cancel-label "Exit" \
+                               --menu "" 0 0 1 \
+                                   "1" "Login to shell" \
+                                   "2" "Remove a nethunter" \
+                                   "3" "Configurasi" \
+                2>& 1 1>& 3)
+            else
+                exec 3>& 1
+                selection=$(dialog --keep-window --begin 2 13 \
+                               --colors --infobox "$show_banner" 20 50 \
+                               --and-widget \
+                               --backtitle "NetHunter Termux V1.0" \
+                               --title " Menu tool " --colors --clear \
+                               --begin 10 21 --cancel-label "Exit" \
+                               --menu "" 0 0 1 \
+                                   "1" "Login to shell" \
+                                   "2" "Remove a nethunter" \
+                2>& 1 1>& 3)
+            fi
+            exit_status=$?
+            case $exit_status in
+                $DIALOG_CANCEL)
+                    clear
+                    printf "Program terminated.\n"
+                    exit 1;;
+                $DIALOG_ESC)
+                    clear
+                    printf "Program aborted.\n"
+                    exit 1;;
+            esac
+            case $selection in
+                1 )
+                    # Dipakai hanya untuk menjalankan NetHunter dan Kali saja.
+                    if [[ $(cat $NETHUNTERFS/etc/os-release |\
+                           grep -a -w ID | cut -d = -f 2) == kali ]]; then
+                        # Mulai masuk ke shell lingkungan nethunter.
+                        start
+                        # Kill process jika yang dijalankan adalah chroot dengan pengguna root.
+                        if [ $username == 0 ]; then
+                            # Permintaan untuk melakukan kill process.
+                            if dialog --stdout --backtitle "NetHunter Termux V1.0 - Stop chroot" \
+                                --yesno "Do you want to  stop nethunter?" 7 70; then
+                                # Umounting file sistem.
+                                kill_chrootfs $umountfs | \
+                                    dialog --progressbox "umounting rootfs...\n" 22 55
+                                # Kill semua process NetHunter.
+                                kill_nethunter | \
+                                    dialog --progressbox "Kill nethuner..." 6 35
+                                # Kill process bash yang berjalan pada akses root.
+                                kill_bash | \
+                                    dialog --progressbox "Kill bash...\n" 6 35
+                            fi
+                        fi
+                    # Berfungsi saat ID kali tidak ada di dalam os-release
+                    else
+                        result=$show_alertInstall
+                        display_result "Error"
+                    fi;;
+                2 )
+                    # Permintaan untuk menghapus kali NetHunter.
+                    if dialog --stdout --backtitle "NetHunter Termux V1.0 - Remove" \
+                        --yesno "$show_questionRemove" 7 70; then
+                        # Hapus jika folder utama rootfs ada.
+                        if [ -d $NETHUNTERFS ]; then
+                            if [ $username == 0 ]; then
+                                # Umount file sistem jika mountpoint fs adalah is a.
+                                if [[ $(busybox mountpoint $NETHUNTERFS/$file_system | grep "is a") ]]; then
+                                    kill_chrootfs
+                                fi
+                            fi
+                            # Hapus rootfs 1.
+                            (rm -rfv $NETHUNTERFS |\
+                                pv --line-mode --numeric \
+                                --size $(find $NETHUNTERFS | wc -l) > logfile) 2>&1 |\
+                                    dialog --gauge "Removing chroot..." 7 78
+                            rm logfile
+
+                            # Hapus rootfs 2.
+#                            rm -rf $NETHUNTERFS/ 2> /dev/null
+                        else
+                            result=$show_alertInstall
+                            display_result "Error"
+                        fi
+                    fi;;
+                3 )
+                    # Menggunakan nano untuk merubah file konfigurasi
+                    nano $config_file
+                    # Memuat ulang file konfigurasi.
+                    getUserConfig;;
+            esac
+        fi
+    done
+
+}
+
+# Manjalankan program utama.
+main
+

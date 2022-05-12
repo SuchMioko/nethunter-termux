@@ -1,0 +1,97 @@
+#!/bin/bash
+
+#
+#      Author: Ryuuou
+#      Build date: 12 Mei 2022
+#
+
+####################################################
+
+# Global variabel untuk NetHunter script
+
+####################################################
+
+
+# Mendapatkan arsitekture pengguna
+function getArch(){
+    case `getprop ro.product.cpu.abi` in
+        armeabi-v7a)
+            ARCH="armhf" ;;
+        armeabi-v8a)
+            ARCH="arm64" ;;
+    *)
+        print "unsupported architecture"
+        exit 1
+    esac
+}
+
+CONFIG_HOME=/data/data/com.termux/files/home/.config
+config_file=${CONFIG_HOME}/nethunter-termux/config.conf
+
+# Speed up script by not using unicode.
+LC_ALL=C
+LANG=C
+
+# Default konfigurasi nethunter-termux
+read -rd '' config <<'EOF'
+# Masuk ke nethunter sebagai pengguna no root yang telah anda buat.
+# Untuk membuat pengguna baru, gunakan perintah 'adduser'
+# contoh: adduser ryuu
+# simpan nama pengguna baru anda di variabel user_name.
+# default username yang sudah ada: root, kali
+user_name="root"
+
+# Variabel ini untuk mengganti hostname, hostname yang diganti tidak permanen.
+# variabel ini tidak bisa di pakai di nethunter yang tidak di memiliki akses root.
+hostname="kali"
+
+shell_login="zsh"
+
+# Variabel ini dapat memount penyimpanan external anda.
+# Lihat penyimpanan external anda di folder /storage lalu masukan ke variabel ini.
+external_sd=""
+EOF
+
+# Mendapatkan konfigurasi dari pengguna
+function getUserConfig(){
+  if [ ! -f ${config_file} ]; then
+    mkdir -p ${CONFIG_HOME}/nethunter-termux/
+    printf "%s\n" "$config" > "$config_file"
+    . ${config_file}
+  else
+    . ${config_file}
+
+  fi
+}
+
+# Path rootfs berdasarkan arsitektur pengguna.
+getArch
+
+if [[ ${username} == 0 ]]; then
+    # Path folder untuk rootfs jika pengguna menggunakan user root.
+    NETHUNTER_DIR=/data/local/nhsystem
+    NETHUNTERFS=/data/local/nhsystem/kali-${ARCH}
+    mkdir -p ${NETHUNTER_DIR} &> /dev/null
+    # PID process NetHunter.
+    proc_nethunter=$(busybox lsof | grep $NETHUNTER_DIR/$NETHUNTERFS | \
+                     awk "{print $1}" | uniq)
+else
+    # Path folser jika user tidak menggunakan user root.
+    NETHUNTER_DIR=/data/data/com.termux/files/usr/share/nhsystem
+    NETHUNTERFS=/data/data/com.termux/files/usr/share/nhsystem/kali-${ARCH}
+    mkdir -p ${NETHUNTER_DIR} &> /dev/null
+fi
+
+file_system=( /dev/pts /dev /proc /sys /system /sdcard )
+rootfs=( bin etc home lib media mnt opt root run sbin srv tmp usr var )
+
+# Mendapatkan ukuran ruang penyimpanan internal pengguna
+SIZE_SDCARD=$(mount | grep sdcardfs | awk "{print $1}" | head -n 1 | \
+              df | awk '{s=$4} END{print (s/1024)}' | sed 's/\..*$//')
+
+# Ini adalah link chroot resmi dari kali linux
+TARBALL_LINK=https://kali.download/nethunter-images/current/rootfs
+
+# PID bash membunuh process root user.
+proc_bash=$(ps -u $(whoami) | grep bash | cut -d '/' -f 1 | \
+            awk '{print $1}' | uniq)

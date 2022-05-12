@@ -1,0 +1,66 @@
+#!/usr/bin/bash
+
+
+#
+#      Author: Ryuuou
+#      Build date: 12 Mei 2022
+
+##############################################################
+
+# Tempat penyimpanan string bahasa inggris dan indonesia.
+# Dengan membaca waktu tempat pengguna.
+
+##############################################################
+
+
+VERSION="1.0"
+AUTHOR="Ryuuou"
+BUILD_DATE="12 May 2022"
+
+
+show_banner="          \Z4Version: \Z7$VERSION\n
+          \Z4Author: \Z7$AUTHOR\n
+          \Z4Build Date: \Z7$BUILD_DATE\n
+       Install Nethunter on your termux"
+
+
+function stringValues(){
+    # Mendapatkan nilai waktu perangkat pengguna jila berada di zona waktu indonesia barat.
+    if [[ $(date | grep WB) ]]; then
+        label_description=Deskripsi
+        show_description="\nJika Anda menggunakan alat ini dalam keadaan pengguna root, itu akan menjalankan chroot dari jalur yang berbeda yang berarti pengguna root dan pengguna non-root akan menggunakan rootfs berbeda.\n\n\n"
+        show_alertInstall="\n  ! \Z1Kali NetHunter tidak terpasang\Z7 !\n\n"
+        show_errorSha512Sum="\n memverifikasi sha512sum gagal!\n"
+        show_errorSU="! \Z1Perangkatmu terdeteksi belum di root\Z7 !"
+        show_extracting="Mengektrak chroot nethunter...\n\nMohon tunggu dan jangan keluar dari aplikasi termux agar tidak terjadi kegagalan!\n\n\n"
+        show_lowStorageFull="Untuk memasang NetHunter tipe Full membutuhkan penyimpanan internal 8GB lebih.\n\nDan ruang penyimpanan anda hanya tersisa:"
+        show_lowStorageMinimal="Untuk memasang NetHunter tipe Minimal membutuhkan penyimpanan internal 2.5GB lebih.\n\nDan ruang penyimpanan anda hanya tersisa:"
+        show_noInternetConnection="\e[91m[-] \e[0mSilahkan periksa koneksi internet anda dan coba kembali.\n"
+        show_questionRemove="Apakah kamu yakin ingin menghapus kali NetHunter di perangkatmu?"
+        show_RemoveFS="\Z4[*] \Z7Menghapus semua mount FS"
+        show_screensizeAlert="Masukan perintah '\e[93mexport COLUMNS LINES\e[0m' terlebih dahulu lalu jalankan kembali."
+        show_screensizeRequired="\n\nMembutuhkan ukuran layar:"
+        show_screensizeUser="\nLayar terminalmu saat ini:"
+        show_screensizeZoomIn="\n\nPerkecil ukuran layar terminalmu !"
+        show_screensizeZoomOut="\n\nPerbesar ukuran layar terminalmu !"
+    # String global
+    else
+        label_description=Description
+        show_description="\nIf you use this tool in root user state, it will run chroot from different path which means root user and non root userwill use different rootfs.\n\n\n"
+        show_alertInstall="\n  ! \Z1mKali NetHunter not installed\Z7 !\n\n"
+        show_errorSha512Sum="\n verify sha512sum failed!\n"
+        show_errorSU="! \Z1Your device was detected not rooted\Z7 !"
+        show_extracting="Extracting chroot nethunter...\n\nPlease wait and don't exit termux application to avoid failure!\n\n\n"
+        show_lowStorageFull="To install NetHunter type Full requires more than 8GB of internal storage.\n\nAnd your storage space is only left:"
+        show_lowStorageMinimal="To install NetHunter Minimal type requires more than 2.5GB of internal storage.\n\nAnd your storage space is only left:"
+        show_noInternetConnection="Please check your internet connection and try again.\n"
+        show_questionRemove="Are you sure you want to delete NetHunter on your device?\n"
+        show_RemoveFS="\n \Z4[*] \Z7Removing all mount FS...\n"
+        show_screensizeAlert="Enter the command '\e[93mexport COLUMNS LINES\e[0m' first and then run it again."
+        show_screensizeRequired="\n\nRequires screen size:"
+        show_screensizeUser="\nYour current terminal screen:"
+        show_screensizeZoomIn="\n\nZoom In the screen size of your terminal !"
+        show_screensizeZoomOut="\n\nZoom Out the screen size of your terminal !"
+    fi
+
+}
