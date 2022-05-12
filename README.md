@@ -1,6 +1,6 @@
 <h1 align="center">NetHunter Termux</h1>
 
-<p align="center">Install NetHunter on your termux with Root and without Root</p>
+<p align="center">Install Kali NetHunter in your termux with Root and without Root</p>
 
 # Information NetHunter
 
