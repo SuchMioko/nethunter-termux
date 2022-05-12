@@ -32,8 +32,7 @@ git clone https://github.com/ryuuou-nyaw/nethunter-termux.git
 ## Start Running NetHunter Script
 
 1. Move to nethunter-termux folder `cd nethunter-termux`
-2. Give execution permission `chmod +x nethunter`
-3. run the nethunter script `./nethunter` to run the nethunter script as root user use `tsu` before running the script.
+2. run the nethunter script `./nethunter` to run the nethunter script as root user use `tsu` before running the script.
 
 After this you will be redirected to choose the type of nethunter.
 
