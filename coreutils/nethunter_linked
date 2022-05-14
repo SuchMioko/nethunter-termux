@@ -20,7 +20,7 @@ function getArch(){
         armeabi-v8a)
             ARCH="arm64" ;;
     *)
-        print "unsupported architecture"
+        printf "unsupported architecture\n"
         exit 1
     esac
 }
