@@ -17,31 +17,27 @@
 function screen(){
     # Local variabel yang menyimpan nilai ukuran layar yang dibutuhkan.
     local COLUMNS_REQUIRED=79
-    local LINES_REQUIRED=28
 
-    # Mengidentifikasi apakah environment COLUMNS & LINES ada atau tidak.
+    # Mengidentifikasi apakah environment COLUMNS ada atau tidak.
     if [[ -n $COLUMNS && -n $LINES ]]; then
-        # Program akan berjalan jika ukuran layar pengguna sama dengan ukuran layar yang dibutuhkan.
-        if (( $COLUMNS == $COLUMNS_REQUIRED & $LINES == $LINES_REQUIRED )); then
+        # Program akan berjalan jika ukuran layar pengguna sama dengan ukuran
+layar yang dibutuhkan.
+        if (( $COLUMNS >= $COLUMNS_REQUIRED )); then
             true
         else
-            # Jika ukuran layar lebih besar dari ukuran layar yang dibutuhkan akan menjalankan kondisi ini.
-            if (( $COLUMNS <= $COLUMNS_REQUIRED & $LINES <= $LINES_REQUIRED )); then
+            # Jika ukuran layar lebih kecil dari ukuran layar yang dibutuhkan
+maka akan menjalankan kondisi ini.
+            if (( $COLUMNS <= $COLUMNS_REQUIRED )); then
                 dialog \
-                --infobox "$show_screensizeUser $COLUMNS x $LINES
-                $show_screensizeRequired $COLUMNS_REQUIRED x $LINES_REQUIRED
-                $show_screensizeZoomOut" 9 0
-            # Jika ukuran layar lebih kecil dari ukuran layar yang dibutuhkan maka akan menjalankan kondisi ini.
-            elif (( $COLUMNS >= $COLUMNS_REQUIRED & $LINES >= $LINES_REQUIRED )); then
-                dialog \
-                --infobox "$show_screensizeUser $COLUMNS x $LINES
-                $show_screensizeRequired $COLUMNS_REQUIRED x $LINES_REQUIRED
-                $show_screensizeZoomIn" 9 0
+                --infobox "$show_screensizeUser $COLUMNS
+                $show_screensizeRequired $COLUMNS_REQUIRED $show_screensizeZoo
+mIn" 9 0
             fi
             exit 1
         fi
     else
-        # Pengguna akan di minta untuk memasukan COLUMNS & LINES kedalam environment
+        # Pengguna akan di minta untuk memasukan COLUMNS & LINES kedalam envir
+onment
         printf $show_screensizeAlert
         exit 1
     fi
