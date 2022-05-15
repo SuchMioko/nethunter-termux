@@ -20,24 +20,20 @@ function screen(){
 
     # Mengidentifikasi apakah environment COLUMNS ada atau tidak.
     if [[ -n $COLUMNS && -n $LINES ]]; then
-        # Program akan berjalan jika ukuran layar pengguna sama dengan ukuran
-layar yang dibutuhkan.
+        # Program akan berjalan jika ukuran layar pengguna sama dengan ukuran layar yang dibutuhkan.
         if (( $COLUMNS >= $COLUMNS_REQUIRED )); then
             true
         else
-            # Jika ukuran layar lebih kecil dari ukuran layar yang dibutuhkan
-maka akan menjalankan kondisi ini.
+            # Jika ukuran layar lebih kecil dari ukuran layar yang dibutuhkan maka akan menjalankan kondisi ini.
             if (( $COLUMNS <= $COLUMNS_REQUIRED )); then
                 dialog \
                 --infobox "$show_screensizeUser $COLUMNS
-                $show_screensizeRequired $COLUMNS_REQUIRED $show_screensizeZoo
-mIn" 9 0
+                $show_screensizeRequired $COLUMNS_REQUIRED $show_screensizeZoomIn" 9 0
             fi
             exit 1
         fi
     else
-        # Pengguna akan di minta untuk memasukan COLUMNS & LINES kedalam envir
-onment
+        # Pengguna akan di minta untuk memasukan COLUMNS & LINES kedalam environment
         printf $show_screensizeAlert
         exit 1
     fi
