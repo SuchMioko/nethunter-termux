@@ -20,6 +20,8 @@ stringValues
 screen
 
 # Import konfigurasi file dialog.
+dialog --create-rc old
+rm old
 cp coreutils/dialogrc $HOME/.dialogrc
 
 # Konfigurasi untuk dialog.
