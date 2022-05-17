@@ -86,8 +86,8 @@ file_system=( /dev/pts /dev /proc /sys /system /sdcard )
 rootfs=( bin etc home lib media mnt opt root run sbin srv tmp usr var )
 
 # Mendapatkan ukuran ruang penyimpanan internal pengguna
-SIZE_SDCARD=$(mount | grep sdcardfs | awk "{print $1}" | head -n 1 | \
-              df | awk '{s=$4} END{print (s/1024)}' | sed 's/\..*$//')
+SIZE_SDCARD=$(df | grep /data/media | head -n 1 | \
+              awk '{s=$4} END{print (s/1024)}' | sed 's/\..*$//')
 
 # Ini adalah link chroot resmi dari kali linux
 TARBALL_LINK=https://kali.download/nethunter-images/current/rootfs
