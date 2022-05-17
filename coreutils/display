@@ -26,7 +26,7 @@ show_banner="          \Z4Version: \Z7$VERSION\n
 
 function stringValues(){
     # Mendapatkan nilai waktu perangkat pengguna jila berada di zona waktu indonesia barat.
-    if [[ $(date | grep WB) ]]; then
+    if [[ $(date | grep WIB) ]]; then
         label_description=Deskripsi
         show_description="\nJika Anda menggunakan alat ini dalam keadaan pengguna root, itu akan menjalankan chroot dari jalur yang berbeda yang berarti pengguna root dan pengguna non-root akan menggunakan rootfs berbeda.\n\n\n"
         show_alertInstall="\n  ! \Z1Kali NetHunter tidak terpasang\Z7 !\n\n"
